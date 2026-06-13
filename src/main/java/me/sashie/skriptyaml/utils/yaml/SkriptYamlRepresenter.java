@@ -32,19 +32,42 @@ public class SkriptYamlRepresenter extends Representer {
 	private static Method representMappingMethod;
 	private static Method representScalarMethod;
 
-	static {		
-		if (SkriptYaml.getInstance().getServerVersion() <= 12) {
-			try {
-				Class<?> baseRepresenterClass = BaseRepresenter.class;
-				representMappingMethod = baseRepresenterClass.getDeclaredMethod("representMapping", Tag.class, Map.class, Boolean.class);
-				representMappingMethod.setAccessible(true);
-				representScalarMethod = baseRepresenterClass.getDeclaredMethod("representScalar", Tag.class, String.class, Character.class);
-				representScalarMethod.setAccessible(true);
-			} catch (SecurityException | NoSuchMethodException e) {
-				e.printStackTrace();
-			}
-		}
-	}
+	static {        
+        try {
+            Class<?> baseRepresenterClass = BaseRepresenter.class;
+            
+            // --- 1. representMapping メソッドの取得 ---
+            try {
+                // 最新環境 (SnakeYAML 2.x): 第3引数が DumperOptions.FlowStyle
+                representMappingMethod = baseRepresenterClass.getDeclaredMethod(
+                    "representMapping", Tag.class, Map.class, org.yaml.snakeyaml.DumperOptions.FlowStyle.class
+                );
+            } catch (NoSuchMethodException e) {
+                // 古い環境 (SnakeYAML 1.x): 第3引数が Boolean
+                representMappingMethod = baseRepresenterClass.getDeclaredMethod(
+                    "representMapping", Tag.class, Map.class, Boolean.class
+                );
+            }
+            representMappingMethod.setAccessible(true);
+            
+            // --- 2. representScalar メソッドの取得 ---
+            try {
+                // 最新環境 (SnakeYAML 2.x): 第3引数が DumperOptions.ScalarStyle
+                representScalarMethod = baseRepresenterClass.getDeclaredMethod(
+                    "representScalar", Tag.class, String.class, org.yaml.snakeyaml.DumperOptions.ScalarStyle.class
+                );
+            } catch (NoSuchMethodException e) {
+                // 古い環境 (SnakeYAML 1.x): 第3引数が Character
+                representScalarMethod = baseRepresenterClass.getDeclaredMethod(
+                    "representScalar", Tag.class, String.class, Character.class
+                );
+            }
+            representScalarMethod.setAccessible(true);
+
+        } catch (SecurityException | NoSuchMethodException e) {
+            e.printStackTrace();
+        }
+    }
 
 	private static List<String> representedClasses = new ArrayList<>();
 
